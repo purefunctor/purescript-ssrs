@@ -1,10 +1,9 @@
 { name = "ssrs"
 , dependencies =
-  [ "console"
-  , "dissect"
-  , "effect"
+  [ "dissect"
   , "either"
   , "fixed-points"
+  , "free"
   , "lists"
   , "prelude"
   , "tuples"
