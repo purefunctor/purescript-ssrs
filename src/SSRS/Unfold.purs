@@ -8,7 +8,7 @@ import Dissect.Class (class Dissect, right)
 import SSRS.Coalgebra (Coalgebra)
 
 ana ∷ ∀ p q v. Dissect p q ⇒ Coalgebra p v → v → Mu p
-ana coalgebra seed_ = go (right (Left (coalgebra seed_))) Nil
+ana coalgebra seed = go (right (Left (coalgebra seed))) Nil
   where
   go index stack =
     case index of
