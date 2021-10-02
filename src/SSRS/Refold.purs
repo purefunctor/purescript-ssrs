@@ -25,6 +25,30 @@ hylo algebra coalgebra seed = go (right (Left (coalgebra seed))) Nil
           Nil →
             algebra pv
 
+dyna
+  ∷ ∀ p q v w
+  . Dissect p q
+  ⇒ GAlgebra (Cofree p) p w
+  → Coalgebra p v
+  → v
+  → w
+dyna gAlgebra coalgebra = head <<< hylo algebra coalgebra
+  where
+  algebra ∷ p (Cofree p w) → Cofree p w
+  algebra n = gAlgebra n :< n
+
+codyna
+  ∷ ∀ p q v w
+  . Dissect p q
+  ⇒ Algebra p w
+  → GCoalgebra (Free p) p v
+  → v
+  → w
+codyna algebra gCoalgebra = hylo algebra coalgebra <<< pure
+  where
+  coalgebra ∷ Free p v → p (Free p v)
+  coalgebra = either identity gCoalgebra <<< resume
+
 chrono
   ∷ ∀ p q v w
   . Dissect p q
