@@ -6,6 +6,7 @@
   , "free"
   , "lists"
   , "prelude"
+  , "tailrec"
   , "tuples"
   ]
 , packages = ./packages.dhall

@@ -3,12 +3,13 @@ module SSRS.Fold where
 import Prelude
 
 import Control.Comonad.Cofree (Cofree, head, (:<))
+import Control.Monad.Rec.Class (class MonadRec, Step(..), tailRecM2)
 import Data.Either (Either(..))
 import Data.Functor.Mu (Mu(..))
 import Data.List (List(..), (:))
 import Data.Tuple (Tuple(..), fst, snd)
 import Dissect.Class (class Dissect, right)
-import SSRS.Algebra (Algebra, GAlgebra)
+import SSRS.Algebra (Algebra, AlgebraM, GAlgebra)
 
 cata ∷ ∀ p q v. Dissect p q ⇒ Algebra p v → Mu p → v
 cata algebra (In pt) = go (right (Left pt)) Nil
@@ -23,6 +24,21 @@ cata algebra (In pt) = go (right (Left pt)) Nil
             go (right (Right (Tuple pd (algebra pv)))) stk
           Nil →
             algebra pv
+
+cataM ∷ ∀ m p q v. MonadRec m ⇒ Dissect p q ⇒ AlgebraM m p v → Mu p → m v
+cataM algebraM (In pt) = tailRecM2 go (right (Left pt)) Nil
+  where
+  go index stack =
+    case index of
+      Left (Tuple (In pt') pd) →
+        pure (Loop { a: right (Left pt'), b: (pd : stack) })
+      Right pv →
+        case stack of
+          (pd : stk) → do
+            pv' ← algebraM pv
+            pure (Loop { a: right (Right (Tuple pd pv')), b: stk })
+          Nil → do
+            Done <$> algebraM pv
 
 prepro ∷ ∀ p q v. Dissect p q ⇒ (p ~> p) → Algebra p v → Mu p → v
 prepro pre algebra = cata (algebra <<< pre)

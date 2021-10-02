@@ -3,12 +3,13 @@ module SSRS.Unfold where
 import Prelude
 
 import Control.Monad.Free (Free, resume)
+import Control.Monad.Rec.Class (class MonadRec, Step(..), tailRecM2)
 import Data.Either (Either(..), either)
 import Data.Functor.Mu (Mu(..))
 import Data.List (List(..), (:))
 import Data.Tuple (Tuple(..))
 import Dissect.Class (class Dissect, right)
-import SSRS.Coalgebra (Coalgebra, GCoalgebra)
+import SSRS.Coalgebra (Coalgebra, CoalgebraM, GCoalgebra)
 
 ana ∷ ∀ p q v. Dissect p q ⇒ Coalgebra p v → v → Mu p
 ana coalgebra seed = go (right (Left (coalgebra seed))) Nil
@@ -23,6 +24,23 @@ ana coalgebra seed = go (right (Left (coalgebra seed))) Nil
             go (right (Right (Tuple pd (In pv)))) stk
           Nil →
             In pv
+
+anaM ∷ ∀ m p q v. MonadRec m ⇒ Dissect p q ⇒ CoalgebraM m p v → v → m (Mu p)
+anaM coalgebraM seed = do
+  start ← coalgebraM seed
+  tailRecM2 go (right (Left start)) Nil
+  where
+  go index stack =
+    case index of
+      Left (Tuple pt pd) → do
+        next ← coalgebraM pt
+        pure (Loop { a: right (Left next), b: (pd : stack) })
+      Right pv →
+        case stack of
+          (pd : stk) →
+            pure (Loop { a: right (Right (Tuple pd (In pv))), b: stk })
+          Nil →
+            pure (Done (In pv))
 
 postpro ∷ ∀ p q v. Dissect p q ⇒ (p ~> p) → Coalgebra p v → v → Mu p
 postpro post coalgebra = ana (post <<< coalgebra)

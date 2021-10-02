@@ -3,13 +3,14 @@ module SSRS.Refold where
 import Prelude
 
 import Control.Monad.Free (Free, resume)
+import Control.Monad.Rec.Class (class MonadRec, Step(..), tailRecM2)
 import Control.Comonad.Cofree (Cofree, head, (:<))
 import Data.Either (Either(..), either)
 import Data.List (List(..), (:))
 import Data.Tuple (Tuple(..))
 import Dissect.Class (class Dissect, right)
-import SSRS.Algebra (Algebra, GAlgebra)
-import SSRS.Coalgebra (Coalgebra, GCoalgebra)
+import SSRS.Algebra (Algebra, AlgebraM, GAlgebra)
+import SSRS.Coalgebra (Coalgebra, CoalgebraM, GCoalgebra)
 
 hylo ∷ ∀ p q v w. Dissect p q ⇒ Algebra p v → Coalgebra p w → w → v
 hylo algebra coalgebra seed = go (right (Left (coalgebra seed))) Nil
@@ -24,6 +25,31 @@ hylo algebra coalgebra seed = go (right (Left (coalgebra seed))) Nil
             go (right (Right (Tuple pd (algebra pv)))) stk
           Nil →
             algebra pv
+
+hyloM
+  ∷ ∀ m p q v w
+  . MonadRec m
+  ⇒ Dissect p q
+  ⇒ AlgebraM m p v
+  → CoalgebraM m p w
+  → w
+  → m v
+hyloM algebraM coalgebraM seed = do
+  start ← coalgebraM seed
+  tailRecM2 go (right (Left start)) Nil
+  where
+  go index stack =
+    case index of
+      Left (Tuple pt pd) → do
+        next ← coalgebraM pt
+        pure (Loop { a: right (Left next), b: (pd : stack) })
+      Right pv →
+        case stack of
+          (pd : stk) → do
+            next ← algebraM pv
+            pure (Loop { a: right (Right (Tuple pd next)), b: stk })
+          Nil → do
+            Done <$> algebraM pv
 
 dyna
   ∷ ∀ p q v w
