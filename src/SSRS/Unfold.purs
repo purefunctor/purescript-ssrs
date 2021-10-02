@@ -33,8 +33,8 @@ apo gCoalgebra = ana coalgebra <<< Right
   coalgebra ∷ Either (Mu p) v → p (Either (Mu p) v)
   coalgebra = either (\(In n) → map Left n) gCoalgebra
 
-futu :: forall p q v. Dissect p q => GCoalgebra (Free p) p v -> v -> Mu p
+futu ∷ ∀ p q v. Dissect p q ⇒ GCoalgebra (Free p) p v → v → Mu p
 futu gCoalgebra = ana coalgebra <<< pure
   where
-  coalgebra :: Free p v -> p (Free p v)
+  coalgebra ∷ Free p v → p (Free p v)
   coalgebra = either identity gCoalgebra <<< resume
