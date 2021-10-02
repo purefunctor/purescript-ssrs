@@ -66,7 +66,7 @@ dyna gAlgebra coalgebra = head <<< hylo algebra coalgebra
 dynaM
   ∷ ∀ m p q v w
   . MonadRec m
-  => Dissect p q
+  ⇒ Dissect p q
   ⇒ GAlgebraM (Cofree p) m p w
   → CoalgebraM m p v
   → v
@@ -91,7 +91,7 @@ codyna algebra gCoalgebra = hylo algebra coalgebra <<< pure
 codynaM
   ∷ ∀ m p q v w
   . MonadRec m
-  => Dissect p q
+  ⇒ Dissect p q
   ⇒ AlgebraM m p w
   → GCoalgebraM (Free p) m p v
   → v
@@ -119,7 +119,7 @@ chrono gAlgebra gCoalgebra = head <<< hylo algebra coalgebra <<< pure
 chronoM
   ∷ ∀ m p q v w
   . MonadRec m
-  => Dissect p q
+  ⇒ Dissect p q
   ⇒ GAlgebraM (Cofree p) m p w
   → GCoalgebraM (Free p) m p v
   → v

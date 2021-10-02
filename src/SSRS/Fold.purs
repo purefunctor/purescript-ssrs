@@ -61,8 +61,8 @@ histo gAlgebra = head <<< cata algebra
   algebra ∷ p (Cofree p v) → Cofree p v
   algebra n = gAlgebra n :< n
 
-histoM :: forall m p q v. MonadRec m => Dissect p q => GAlgebraM (Cofree p) m p v -> Mu p -> m v
+histoM ∷ ∀ m p q v. MonadRec m ⇒ Dissect p q ⇒ GAlgebraM (Cofree p) m p v → Mu p → m v
 histoM gAlgebraM = map head <<< cataM algebraM
   where
-  algebraM :: p (Cofree p v) -> m (Cofree p v)
+  algebraM ∷ p (Cofree p v) → m (Cofree p v)
   algebraM n = mkCofree <$> gAlgebraM n <*> pure n
