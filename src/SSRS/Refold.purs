@@ -4,13 +4,13 @@ import Prelude
 
 import Control.Monad.Free (Free, resume)
 import Control.Monad.Rec.Class (class MonadRec, Step(..), tailRecM2)
-import Control.Comonad.Cofree (Cofree, head, (:<))
+import Control.Comonad.Cofree (Cofree, head, mkCofree, (:<))
 import Data.Either (Either(..), either)
 import Data.List (List(..), (:))
 import Data.Tuple (Tuple(..))
 import Dissect.Class (class Dissect, right)
-import SSRS.Algebra (Algebra, AlgebraM, GAlgebra)
-import SSRS.Coalgebra (Coalgebra, CoalgebraM, GCoalgebra)
+import SSRS.Algebra (Algebra, AlgebraM, GAlgebra, GAlgebraM)
+import SSRS.Coalgebra (Coalgebra, CoalgebraM, GCoalgebra, GCoalgebraM)
 
 hylo ∷ ∀ p q v w. Dissect p q ⇒ Algebra p v → Coalgebra p w → w → v
 hylo algebra coalgebra seed = go (right (Left (coalgebra seed))) Nil
@@ -63,6 +63,19 @@ dyna gAlgebra coalgebra = head <<< hylo algebra coalgebra
   algebra ∷ p (Cofree p w) → Cofree p w
   algebra n = gAlgebra n :< n
 
+dynaM
+  ∷ ∀ m p q v w
+  . MonadRec m
+  => Dissect p q
+  ⇒ GAlgebraM (Cofree p) m p w
+  → CoalgebraM m p v
+  → v
+  → m w
+dynaM gAlgebraM coalgebraM = map head <<< hyloM algebraM coalgebraM
+  where
+  algebraM ∷ p (Cofree p w) → m (Cofree p w)
+  algebraM n = mkCofree <$> gAlgebraM n <*> pure n
+
 codyna
   ∷ ∀ p q v w
   . Dissect p q
@@ -74,6 +87,19 @@ codyna algebra gCoalgebra = hylo algebra coalgebra <<< pure
   where
   coalgebra ∷ Free p v → p (Free p v)
   coalgebra = either identity gCoalgebra <<< resume
+
+codynaM
+  ∷ ∀ m p q v w
+  . MonadRec m
+  => Dissect p q
+  ⇒ AlgebraM m p w
+  → GCoalgebraM (Free p) m p v
+  → v
+  → m w
+codynaM algebraM gCoalgebraM = hyloM algebraM coalgebraM <<< pure
+  where
+  coalgebraM ∷ Free p v → m (p (Free p v))
+  coalgebraM = either (pure <<< identity) gCoalgebraM <<< resume
 
 chrono
   ∷ ∀ p q v w
@@ -89,3 +115,19 @@ chrono gAlgebra gCoalgebra = head <<< hylo algebra coalgebra <<< pure
 
   coalgebra ∷ Free p v → p (Free p v)
   coalgebra = either identity gCoalgebra <<< resume
+
+chronoM
+  ∷ ∀ m p q v w
+  . MonadRec m
+  => Dissect p q
+  ⇒ GAlgebraM (Cofree p) m p w
+  → GCoalgebraM (Free p) m p v
+  → v
+  → m w
+chronoM gAlgebraM gCoalgebraM = map head <<< hyloM algebraM coalgebraM <<< pure
+  where
+  algebraM ∷ p (Cofree p w) → m (Cofree p w)
+  algebraM n = mkCofree <$> gAlgebraM n <*> pure n
+
+  coalgebraM ∷ Free p v → m (p (Free p v))
+  coalgebraM = either (pure <<< identity) gCoalgebraM <<< resume
