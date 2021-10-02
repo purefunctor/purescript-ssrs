@@ -20,3 +20,6 @@ ana coalgebra seed = go (right (Left (coalgebra seed))) Nil
             go (right (Right (Tuple pd (In pv)))) stk
           Nil →
             In pv
+
+postpro ∷ ∀ p q v. Dissect p q ⇒ (p ~> p) → Coalgebra p v → v → Mu p
+postpro post coalgebra = ana (post <<< coalgebra)

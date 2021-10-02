@@ -24,6 +24,9 @@ cata algebra (In pt) = go (right (Left pt)) Nil
           Nil →
             algebra pv
 
+prepro ∷ ∀ p q v. Dissect p q ⇒ (p ~> p) → Algebra p v → Mu p → v
+prepro pre algebra = cata (algebra <<< pre)
+
 para ∷ ∀ p q v. Dissect p q ⇒ GAlgebra (Tuple (Mu p)) p v → Mu p → v
 para gAlgebra = snd <<< cata algebra
   where
