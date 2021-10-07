@@ -78,3 +78,15 @@ zygoM algebraM gAlgebraM = map fst <<< cataM zAlgebraM
   where
   zAlgebraM :: p (Tuple v w) -> m (Tuple v w)
   zAlgebraM n = Tuple <$> gAlgebraM (map swap n) <*> algebraM (map snd n)
+
+mutu ∷ ∀ p q v w. Dissect p q ⇒ GAlgebra (Tuple v) p w → GAlgebra (Tuple w) p v → Mu p → v
+mutu gAlgebraV gAlgebraW = fst <<< cata algebra
+  where
+  algebra ∷ p (Tuple v w) → Tuple v w
+  algebra n = Tuple (gAlgebraW (map swap n)) (gAlgebraV n)
+
+mutuM ∷ ∀ m p q v w. MonadRec m ⇒ Dissect p q ⇒ GAlgebraM (Tuple v) m p w → GAlgebraM (Tuple w) m p v → Mu p → m v
+mutuM gAlgebraVM gAlgebraWM = map fst <<< cataM algebraM
+  where
+  algebraM ∷ p (Tuple v w) → m (Tuple v w)
+  algebraM n = Tuple <$> gAlgebraWM (map swap n) <*> gAlgebraVM n
