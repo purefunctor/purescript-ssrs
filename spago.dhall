@@ -6,6 +6,7 @@
   , "free"
   , "lists"
   , "prelude"
+  , "safe-coerce"
   , "tailrec"
   , "tuples"
   ]

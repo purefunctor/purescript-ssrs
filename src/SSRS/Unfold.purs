@@ -9,7 +9,9 @@ import Data.Functor.Mu (Mu(..))
 import Data.List (List(..), (:))
 import Data.Tuple (Tuple(..))
 import Dissect.Class (class Dissect, right)
+import Safe.Coerce (class Coercible, coerce)
 import SSRS.Coalgebra (Coalgebra, CoalgebraM, GCoalgebra, GCoalgebraM)
+import SSRS.Transform (Transform, TransformM)
 
 ana ∷ ∀ p q v. Dissect p q ⇒ Coalgebra p v → v → Mu p
 ana coalgebra seed = go (right (Left (coalgebra seed))) Nil
@@ -41,6 +43,43 @@ anaM coalgebraM seed = do
             pure (Loop { a: right (Right (Tuple pd (In pv))), b: stk })
           Nil →
             pure (Done (In pv))
+
+transAna
+  ∷ ∀ p p' q q'
+  . Dissect p p'
+  ⇒ Dissect q q'
+  ⇒ Transform (Mu p) p q -- p (Mu p) -> q (Mu p)
+  → Mu p
+  → Mu q
+transAna c = ana (coerce c ∷ Mu p → q (Mu p))
+
+transAnaM
+  ∷ ∀ m p p' q q'
+  . MonadRec m
+  ⇒ Dissect p p'
+  ⇒ Dissect q q'
+  ⇒ TransformM m (Mu p) p q -- p (Mu p) -> m (q (Mu p))
+  → Mu p
+  → m (Mu q)
+transAnaM c = anaM (coerce c ∷ Mu p → m (q (Mu p)))
+
+transAnaT
+  ∷ ∀ p q
+  . Dissect p q
+  ⇒ (Mu p → Mu p)
+  → Mu p
+  → Mu p
+transAnaT c = ana (coerce c ∷ Mu p → p (Mu p))
+
+transAnaTM
+  ∷ ∀ m p q
+  . MonadRec m
+  ⇒ Coercible (m (Mu p)) (m (p (Mu p)))
+  ⇒ Dissect p q
+  ⇒ (Mu p → m (Mu p))
+  → Mu p
+  → m (Mu p)
+transAnaTM t = anaM (coerce t ∷ Mu p → m (p (Mu p)))
 
 postpro ∷ ∀ p q v. Dissect p q ⇒ (p ~> p) → Coalgebra p v → v → Mu p
 postpro post coalgebra = ana (post <<< coalgebra)

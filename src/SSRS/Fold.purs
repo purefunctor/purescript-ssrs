@@ -9,7 +9,9 @@ import Data.Functor.Mu (Mu(..))
 import Data.List (List(..), (:))
 import Data.Tuple (Tuple(..), fst, snd, swap)
 import Dissect.Class (class Dissect, right)
+import Safe.Coerce (class Coercible, coerce)
 import SSRS.Algebra (Algebra, AlgebraM, GAlgebra, GAlgebraM)
+import SSRS.Transform (Transform, TransformM)
 
 cata ∷ ∀ p q v. Dissect p q ⇒ Algebra p v → Mu p → v
 cata algebra (In pt) = go (right (Left pt)) Nil
@@ -39,6 +41,43 @@ cataM algebraM (In pt) = tailRecM2 go (right (Left pt)) Nil
             pure (Loop { a: right (Right (Tuple pd pv')), b: stk })
           Nil → do
             Done <$> algebraM pv
+
+transCata
+  ∷ ∀ p p' q q'
+  . Dissect p p'
+  ⇒ Dissect q q'
+  ⇒ Transform (Mu q) p q -- p (Mu q) -> q (Mu q)
+  → Mu p
+  → Mu q
+transCata t = cata (coerce t ∷ p (Mu q) → Mu q)
+
+transCataM
+  ∷ ∀ m p p' q q'
+  . MonadRec m
+  ⇒ Coercible (m (q (Mu q))) (m (Mu q))
+  ⇒ Dissect p p'
+  ⇒ Dissect q q'
+  ⇒ TransformM m (Mu q) p q -- p (Mu q) -> m (q (Mu q))
+  → Mu p
+  → m (Mu q)
+transCataM t = cataM (coerce t ∷ p (Mu q) → m (Mu q))
+
+transCataT
+  ∷ ∀ p q
+  . Dissect p q
+  ⇒ (Mu p → Mu p)
+  → Mu p
+  → Mu p
+transCataT t = cata (coerce t ∷ p (Mu p) → Mu p)
+
+transCataTM
+  ∷ ∀ m p q
+  . MonadRec m
+  ⇒ Dissect p q
+  ⇒ (Mu p → m (Mu p))
+  → Mu p
+  → m (Mu p)
+transCataTM t = cataM (coerce t ∷ p (Mu p) → m (Mu p))
 
 prepro ∷ ∀ p q v. Dissect p q ⇒ (p ~> p) → Algebra p v → Mu p → v
 prepro pre algebra = cata (algebra <<< pre)

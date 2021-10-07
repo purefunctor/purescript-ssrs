@@ -6,11 +6,14 @@ import Control.Monad.Free (Free, resume)
 import Control.Monad.Rec.Class (class MonadRec, Step(..), tailRecM2)
 import Control.Comonad.Cofree (Cofree, head, mkCofree, (:<))
 import Data.Either (Either(..), either)
+import Data.Functor.Mu (Mu(..))
 import Data.List (List(..), (:))
 import Data.Tuple (Tuple(..))
 import Dissect.Class (class Dissect, right)
+import Safe.Coerce (class Coercible, coerce)
 import SSRS.Algebra (Algebra, AlgebraM, GAlgebra, GAlgebraM)
 import SSRS.Coalgebra (Coalgebra, CoalgebraM, GCoalgebra, GCoalgebraM)
+import SSRS.Transform (Transform, TransformM)
 
 hylo ∷ ∀ p q v w. Dissect p q ⇒ Algebra p v → Coalgebra p w → w → v
 hylo algebra coalgebra seed = go (right (Left (coalgebra seed))) Nil
@@ -50,6 +53,36 @@ hyloM algebraM coalgebraM seed = do
             pure (Loop { a: right (Right (Tuple pd next)), b: stk })
           Nil → do
             Done <$> algebraM pv
+
+transHylo
+  ∷ ∀ p p' q q' r r'
+  . Dissect p p'
+  ⇒ Dissect q q'
+  ⇒ Dissect r r'
+  ⇒ Transform (Mu q) r q -- r (Mu q) -> q (Mu q)
+  → Transform (Mu p) p r -- p (Mu p) -> r (Mu p)
+  → Mu p
+  → Mu q
+transHylo a c =
+  hylo
+    (coerce a ∷ r (Mu q) → Mu q) -- q (Mu q) = Mu q
+    (coerce c ∷ Mu p → r (Mu p)) -- p (Mu p) = Mu p
+
+transHyloM
+  ∷ ∀ m p p' q q' r r'
+  . MonadRec m
+  ⇒ Coercible (m (q (Mu q))) (m (Mu q))
+  ⇒ Dissect p p'
+  ⇒ Dissect q q'
+  ⇒ Dissect r r'
+  ⇒ TransformM m (Mu q) r q -- r (Mu q) -> m (q (Mu q))
+  → TransformM m (Mu p) p r -- p (Mu p) -> m (r (Mu p))
+  → Mu p
+  → m (Mu q)
+transHyloM a c =
+  hyloM
+    (coerce a ∷ r (Mu q) → m (Mu q))
+    (coerce c ∷ Mu p → m (r (Mu p)))
 
 dyna
   ∷ ∀ p q v w
