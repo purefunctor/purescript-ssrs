@@ -7,7 +7,7 @@ import Control.Monad.Rec.Class (class MonadRec, Step(..), tailRecM2)
 import Data.Either (Either(..))
 import Data.Functor.Mu (Mu(..))
 import Data.List (List(..), (:))
-import Data.Tuple (Tuple(..), fst, snd)
+import Data.Tuple (Tuple(..), fst, snd, swap)
 import Dissect.Class (class Dissect, right)
 import SSRS.Algebra (Algebra, AlgebraM, GAlgebra, GAlgebraM)
 
@@ -66,3 +66,15 @@ histoM gAlgebraM = map head <<< cataM algebraM
   where
   algebraM ∷ p (Cofree p v) → m (Cofree p v)
   algebraM n = mkCofree <$> gAlgebraM n <*> pure n
+
+zygo :: forall p q v w. Dissect p q => Algebra p w -> GAlgebra (Tuple w) p v -> Mu p -> v
+zygo algebra gAlgebra = fst <<< cata zAlgebra
+  where
+  zAlgebra :: p (Tuple v w) -> Tuple v w
+  zAlgebra n = Tuple (gAlgebra (map swap n)) (algebra (map snd n))
+
+zygoM :: forall m p q v w. MonadRec m => Dissect p q => AlgebraM m p w -> GAlgebraM (Tuple w) m p v -> Mu p -> m v
+zygoM algebraM gAlgebraM = map fst <<< cataM zAlgebraM
+  where
+  zAlgebraM :: p (Tuple v w) -> m (Tuple v w)
+  zAlgebraM n = Tuple <$> gAlgebraM (map swap n) <*> algebraM (map snd n)
