@@ -8,14 +8,19 @@ let additions =
         { dependencies =
           [ "bifunctors"
           , "either"
+          , "fixed-points"
           , "functors"
+          , "lists"
           , "partial"
           , "prelude"
+          , "safe-coerce"
           , "tailrec"
           , "tuples"
+          , "typelevel-prelude"
+          , "unsafe-coerce"
           ]
         , repo = "https://github.com/PureFunctor/purescript-dissect.git"
-        , version = "53f4c673a541c03cdc3bc8a04b0e4598c36f45df"
+        , version = "v0.1.0"
         }
       }
 
