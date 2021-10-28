@@ -9,23 +9,24 @@ import Data.Either (Either(..), either)
 import Data.Functor.Mu (Mu(..))
 import Data.List (List(..), (:))
 import Data.Tuple (Tuple(..))
-import Dissect.Class (class Dissect, right)
+import Dissect.Class (class Dissect, pluck, plant)
 import Safe.Coerce (class Coercible, coerce)
 import SSRS.Algebra (Algebra, AlgebraM, GAlgebra, GAlgebraM)
 import SSRS.Coalgebra (Coalgebra, CoalgebraM, GCoalgebra, GCoalgebraM)
 import SSRS.Transform (Transform, TransformM)
 
 hylo ∷ ∀ p q v w. Dissect p q ⇒ Algebra p v → Coalgebra p w → w → v
-hylo algebra coalgebra seed = go (right (Left (coalgebra seed))) Nil
+hylo algebra coalgebra seed = go (pluck (coalgebra seed)) Nil
   where
+  go :: Either (Tuple w (q v w)) (p v) → List (q v w) → v
   go index stack =
     case index of
       Left (Tuple pt pd) →
-        go (right (Left (coalgebra pt))) (pd : stack)
+        go (pluck (coalgebra pt)) (pd : stack)
       Right pv →
         case stack of
           (pd : stk) →
-            go (right (Right (Tuple pd (algebra pv)))) stk
+            go (plant pd (algebra pv)) stk
           Nil →
             algebra pv
 
@@ -39,18 +40,18 @@ hyloM
   → m v
 hyloM algebraM coalgebraM seed = do
   start ← coalgebraM seed
-  tailRecM2 go (right (Left start)) Nil
+  tailRecM2 go (pluck start) Nil
   where
   go index stack =
     case index of
       Left (Tuple pt pd) → do
         next ← coalgebraM pt
-        pure (Loop { a: right (Left next), b: (pd : stack) })
+        pure (Loop { a: pluck next, b: (pd : stack) })
       Right pv →
         case stack of
           (pd : stk) → do
             next ← algebraM pv
-            pure (Loop { a: right (Right (Tuple pd next)), b: stk })
+            pure (Loop { a: plant pd next, b: stk })
           Nil → do
             Done <$> algebraM pv
 

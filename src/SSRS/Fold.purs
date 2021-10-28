@@ -8,37 +8,38 @@ import Data.Either (Either(..))
 import Data.Functor.Mu (Mu(..))
 import Data.List (List(..), (:))
 import Data.Tuple (Tuple(..), fst, snd, swap)
-import Dissect.Class (class Dissect, right)
+import Dissect.Class (class Dissect, pluck, plant)
 import Safe.Coerce (class Coercible, coerce)
 import SSRS.Algebra (Algebra, AlgebraM, GAlgebra, GAlgebraM)
 import SSRS.Transform (Transform, TransformM)
 
 cata ∷ ∀ p q v. Dissect p q ⇒ Algebra p v → Mu p → v
-cata algebra (In pt) = go (right (Left pt)) Nil
+cata algebra (In pt) = go (pluck pt) Nil
   where
+  go :: Either (Tuple (Mu p) (q v (Mu p))) (p v) → List (q v (Mu p)) → v
   go index stack =
     case index of
       Left (Tuple (In pt') pd) →
-        go (right (Left pt')) (pd : stack)
+        go (pluck pt') (pd : stack)
       Right pv →
         case stack of
           (pd : stk) →
-            go (right (Right (Tuple pd (algebra pv)))) stk
+            go (plant pd (algebra pv)) stk
           Nil →
             algebra pv
 
 cataM ∷ ∀ m p q v. MonadRec m ⇒ Dissect p q ⇒ AlgebraM m p v → Mu p → m v
-cataM algebraM (In pt) = tailRecM2 go (right (Left pt)) Nil
+cataM algebraM (In pt) = tailRecM2 go (pluck pt) Nil
   where
   go index stack =
     case index of
       Left (Tuple (In pt') pd) →
-        pure (Loop { a: right (Left pt'), b: (pd : stack) })
+        pure (Loop { a: pluck pt', b: (pd : stack) })
       Right pv →
         case stack of
           (pd : stk) → do
             pv' ← algebraM pv
-            pure (Loop { a: right (Right (Tuple pd pv')), b: stk })
+            pure (Loop { a: plant pd pv', b: stk })
           Nil → do
             Done <$> algebraM pv
 
