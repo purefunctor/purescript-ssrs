@@ -16,7 +16,7 @@ import SSRS.Transform (Transform, TransformM)
 ana ∷ ∀ p q v. Dissect p q ⇒ Coalgebra p v → v → Mu p
 ana coalgebra seed = go (pluck (coalgebra seed)) Nil
   where
-  go :: Either (Tuple v (q (Mu p) v)) (p (Mu p)) → List (q (Mu p) v) → Mu p
+  go ∷ Either (Tuple v (q (Mu p) v)) (p (Mu p)) → List (q (Mu p) v) → Mu p
   go index stack =
     case index of
       Left (Tuple pt pd) →

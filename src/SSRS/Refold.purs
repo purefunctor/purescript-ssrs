@@ -18,7 +18,7 @@ import SSRS.Transform (Transform, TransformM)
 hylo ∷ ∀ p q v w. Dissect p q ⇒ Algebra p v → Coalgebra p w → w → v
 hylo algebra coalgebra seed = go (pluck (coalgebra seed)) Nil
   where
-  go :: Either (Tuple w (q v w)) (p v) → List (q v w) → v
+  go ∷ Either (Tuple w (q v w)) (p v) → List (q v w) → v
   go index stack =
     case index of
       Left (Tuple pt pd) →

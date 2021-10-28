@@ -16,7 +16,7 @@ import SSRS.Transform (Transform, TransformM)
 cata ∷ ∀ p q v. Dissect p q ⇒ Algebra p v → Mu p → v
 cata algebra (In pt) = go (pluck pt) Nil
   where
-  go :: Either (Tuple (Mu p) (q v (Mu p))) (p v) → List (q v (Mu p)) → v
+  go ∷ Either (Tuple (Mu p) (q v (Mu p))) (p v) → List (q v (Mu p)) → v
   go index stack =
     case index of
       Left (Tuple (In pt') pd) →
