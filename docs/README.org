@@ -102,7 +102,7 @@ we can use it to build an iterative catamorphism machine from scratch.
 3. When plucking a ~Mu p ~ p (Mu p)~ we end up with two choices:
 
    1. We receive a fruit ~Mu p ~ p (Mu p)~ and a dissection ~q v (Mu p)~. We have to process this fruit
-      as we did in in step 2, and store the dissection somewhere until we can fill it with the
+      as we did in step 2, and store the dissection somewhere until we can fill it with the
       processed fruit.
 
    2. We receive a flower ~p v~ that we can call our algebra on, giving us a ~v~. We can then use this
@@ -244,7 +244,7 @@ END
 Traditionally, catamorphisms can be implemented as a series of function compositions that go from ~Mu
 p~ into a ~v~. The code block below adopts the Haskell definition listed in [[https://blog.sumtypeofway.com/posts/recursion-schemes-part-2.html][Recursion Schemes, Part II:
 A Mob of Morphisms]]. Note that in order to actually work with this definition, we'd have to perform
-some indirection as to not implicit perform left-recursion in ~cata~; see the implementation in
+some indirection as to not perform implicit left-recursion on ~cata~; see the implementation in
 [[https://github.com/purescript-contrib/purescript-matryoshka][matryoshka]] for more details.
 #+begin_src purescript
 cata :: forall f a. Functor f => (f a -> a) -> (Mu f -> a)
