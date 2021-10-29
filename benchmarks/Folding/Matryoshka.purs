@@ -6,7 +6,7 @@ import Benchmark.Common (ListF(..))
 import Data.Functor.Mu (Mu)
 import Matryoshka.Fold (cata)
 
-sigma :: Mu (ListF Int) -> Int
+sigma ∷ Mu (ListF Int) → Int
 sigma = cata go
   where
   go Nil = 0
