@@ -5,7 +5,8 @@
   "scripts": {
     "build": "spago build",
     "test": "spago -x tests.dhall test",
-    "repl": "spago -x tests.dhall repl"
+    "repl": "spago -x tests.dhall repl",
+    "bench": "spago -x bench.dhall run -m Benchmark.Main"
   },
   "devDependencies": {
     "benchmark": "^2.1.4"
