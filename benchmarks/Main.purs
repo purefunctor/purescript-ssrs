@@ -15,9 +15,9 @@ foldingList :: Benchmark
 foldingList = mkBenchmark
   { slug: "foldingList"
   , title: "Integer summation"
-  , sizes: (1 .. 5) <#> (_ * 1000)
+  , sizes: (1 .. 25) <#> (_ * 1000)
   , sizeInterpretation: "List length"
-  , inputsPerSize: 1
+  , inputsPerSize: 100
   , gen: \n -> listOf n arbitrary
   , functions: [ benchFn "ssrs" FoldingSSRS.sigma
                , benchFn "matryoshka" FoldingMatryoshka.sigma
