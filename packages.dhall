@@ -1,29 +1,11 @@
 let upstream =
-      https://github.com/purescript/package-sets/releases/download/psc-0.14.4-20211005/packages.dhall
-        sha256:2ec351f17be14b3f6421fbba36f4f01d1681e5c7f46e0c981465c4cf222de5be
+      https://github.com/purescript/package-sets/releases/download/psc-0.14.4-20211028/packages.dhall
+        sha256:df6486e7fad6dbe724c4e2ee5eac65454843dce1f6e10dc35e0b1a8aa9720b26
 
 let overrides = {=}
 
 let additions =
-      { dissect =
-        { dependencies =
-          [ "bifunctors"
-          , "either"
-          , "fixed-points"
-          , "functors"
-          , "lists"
-          , "partial"
-          , "prelude"
-          , "safe-coerce"
-          , "tailrec"
-          , "tuples"
-          , "typelevel-prelude"
-          , "unsafe-coerce"
-          ]
-        , repo = "https://github.com/PureFunctor/purescript-dissect.git"
-        , version = "v0.1.0"
-        }
-      , benchotron =
+      { benchotron =
         { dependencies =
           [ "arrays"
           , "console"
