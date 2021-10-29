@@ -6,7 +6,6 @@ in      conf
             # [ "arrays"
               , "benchotron"
               , "bifunctors"
-              , "console"
               , "effect"
               , "free"
               , "matryoshka"
