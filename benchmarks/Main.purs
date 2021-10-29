@@ -2,8 +2,9 @@ module Benchmark.Main where
 
 import Prelude
 
-import Benchmark.Common (listOf)
+import Benchmark.Common (listOf, polyListOf)
 import Benchmark.Folding.SSRS as FoldingSSRS
+import Benchmark.Folding.SSRSPoly as FoldingSSRSPoly
 import Benchmark.Folding.Matryoshka as FoldingMatryoshka
 import Benchotron.Core (Benchmark, benchFn, mkBenchmark)
 import Benchotron.UI.Console (runSuite)
@@ -24,5 +25,17 @@ foldingList = mkBenchmark
                ]
   }
 
+foldingListPoly :: Benchmark
+foldingListPoly = mkBenchmark
+  { slug: "foldingListPoly"
+  , title: "Integer summation"
+  , sizes: (1 .. 25) <#> (_ * 1000)
+  , sizeInterpretation: "List length"
+  , inputsPerSize: 100
+  , gen: \n -> polyListOf n arbitrary
+  , functions: [ benchFn "ssrs" FoldingSSRSPoly.sigma
+               ]
+  }
+
 main :: Effect Unit
-main = runSuite [foldingList]
+main = runSuite [foldingList, foldingListPoly]

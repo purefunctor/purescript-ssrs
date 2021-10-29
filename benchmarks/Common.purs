@@ -77,13 +77,19 @@ _LeafP a = In (SumL (Const a))
 _ForkP ∷ ∀ a. Mu (TreeP a) → Mu (TreeP a) → Mu (TreeP a)
 _ForkP a b = In (SumR (Product (Id a) (Id b)))
 
-listOf ∷ ∀ a. Int → Gen a → Gen (Mu (ListF a))
-listOf n g
-  | n <= 0 = pure _Nil
-  | otherwise = tailRecM go (Tuple _Nil n)
+listOf_ ∷ ∀ r a. r -> (a -> r -> r) -> Int → Gen a → Gen r
+listOf_ nil cons n g
+  | n <= 0 = pure nil
+  | otherwise = tailRecM go (Tuple nil n)
       where
       go (Tuple a 0) = pure (Done a)
-      go (Tuple a c) = g <#> \x → Loop (Tuple (_Cons x a) (c - 1))
+      go (Tuple a c) = g <#> \x → Loop (Tuple (cons x a) (c - 1))
+
+listOf ∷ ∀ a. Int → Gen a → Gen (Mu (ListF a))
+listOf = listOf_ _Nil _Cons
+
+polyListOf :: ∀ a. Int → Gen a → Gen (Mu (ListP a))
+polyListOf = listOf_ _NilP _ConsP
 
 treeOf ∷ ∀ a. Int → Gen a → Gen (Mu (TreeF a))
 treeOf n g
