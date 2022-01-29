@@ -4,43 +4,43 @@ import Prelude
 
 import Control.Comonad.Cofree (Cofree, head, mkCofree, (:<))
 import Control.Monad.Rec.Class (class MonadRec, Step(..), tailRecM2)
-import Data.Either (Either(..))
 import Data.Functor.Mu (Mu(..))
 import Data.List (List(..), (:))
 import Data.Tuple (Tuple(..), fst, snd, swap)
-import Dissect.Class (class Dissect, pluck, plant)
+import Dissect.Class (class Dissect, Input(..), Output(..), right)
 import Safe.Coerce (class Coercible, coerce)
 import SSRS.Algebra (Algebra, AlgebraM, GAlgebra, GAlgebraM)
 import SSRS.Transform (Transform, TransformM)
 
 cata ∷ ∀ p q v. Dissect p q ⇒ Algebra p v → Mu p → v
-cata algebra (In pt) = go (pluck pt) Nil
+cata algebra (In pt) = go (right (Init pt)) Nil
   where
-  go ∷ Either (Tuple (Mu p) (q v (Mu p))) (p v) → List (q v (Mu p)) → v
+  go :: Output p q v (Mu p) -> List (q v (Mu p)) -> v
   go index stack =
     case index of
-      Left (Tuple (In pt') pd) →
-        go (pluck pt') (pd : stack)
-      Right pv →
+      Yield (In pt') pd -> do
+        go (right (Init pt')) (pd : stack)
+      Return pv ->
         case stack of
-          (pd : stk) →
-            go (plant pd (algebra pv)) stk
-          Nil →
+          (pd : stk) ->
+            go (right (Next pd (algebra pv))) stk
+          Nil ->
             algebra pv
 
 cataM ∷ ∀ m p q v. MonadRec m ⇒ Dissect p q ⇒ AlgebraM m p v → Mu p → m v
-cataM algebraM (In pt) = tailRecM2 go (pluck pt) Nil
+cataM algebraM (In pt) = tailRecM2 go (right (Init pt)) Nil
   where
+  go :: Output p q v (Mu p) -> List (q v (Mu p)) -> _
   go index stack =
     case index of
-      Left (Tuple (In pt') pd) →
-        pure (Loop { a: pluck pt', b: (pd : stack) })
-      Right pv →
+      Yield (In pt') pd ->
+        pure (Loop { a: right (Init pt'), b: (pd : stack) })
+      Return pv ->
         case stack of
-          (pd : stk) → do
-            pv' ← algebraM pv
-            pure (Loop { a: plant pd pv', b: stk })
-          Nil → do
+          (pd : stk) -> do
+            pv' <- algebraM pv
+            pure (Loop { a: right (Next pd pv'), b: stk })
+          Nil -> do
             Done <$> algebraM pv
 
 transCata

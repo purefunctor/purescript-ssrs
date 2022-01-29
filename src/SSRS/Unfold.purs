@@ -7,41 +7,39 @@ import Control.Monad.Rec.Class (class MonadRec, Step(..), tailRecM2)
 import Data.Either (Either(..), either)
 import Data.Functor.Mu (Mu(..))
 import Data.List (List(..), (:))
-import Data.Tuple (Tuple(..))
-import Dissect.Class (class Dissect, pluck, plant)
+import Dissect.Class (class Dissect, Input(..), Output(..), right)
 import Safe.Coerce (class Coercible, coerce)
 import SSRS.Coalgebra (Coalgebra, CoalgebraM, GCoalgebra, GCoalgebraM)
 import SSRS.Transform (Transform, TransformM)
 
 ana ∷ ∀ p q v. Dissect p q ⇒ Coalgebra p v → v → Mu p
-ana coalgebra seed = go (pluck (coalgebra seed)) Nil
+ana coalgebra seed = go (right (Init (coalgebra seed))) Nil
   where
-  go ∷ Either (Tuple v (q (Mu p) v)) (p (Mu p)) → List (q (Mu p) v) → Mu p
   go index stack =
     case index of
-      Left (Tuple pt pd) →
-        go (pluck (coalgebra pt)) (pd : stack)
-      Right pv →
+      Yield pt pd →
+        go (right (Init (coalgebra pt))) (pd : stack)
+      Return pv →
         case stack of
           (pd : stk) →
-            go (plant pd (In pv)) stk
+            go (right (Next pd (In pv))) stk
           Nil →
             In pv
 
 anaM ∷ ∀ m p q v. MonadRec m ⇒ Dissect p q ⇒ CoalgebraM m p v → v → m (Mu p)
 anaM coalgebraM seed = do
   start ← coalgebraM seed
-  tailRecM2 go (pluck start) Nil
+  tailRecM2 go (right (Init start)) Nil
   where
   go index stack =
     case index of
-      Left (Tuple pt pd) → do
+      Yield pt pd → do
         next ← coalgebraM pt
-        pure (Loop { a: pluck next, b: (pd : stack) })
-      Right pv →
+        pure (Loop { a: right (Init next), b: (pd : stack) })
+      Return pv →
         case stack of
           (pd : stk) →
-            pure (Loop { a: plant pd (In pv), b: stk })
+            pure (Loop { a: right (Next pd (In pv)), b: stk })
           Nil →
             pure (Done (In pv))
 

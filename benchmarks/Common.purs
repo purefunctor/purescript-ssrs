@@ -4,11 +4,10 @@ import Prelude
 
 import Control.Monad.Rec.Class (Step(..), tailRecM)
 import Data.Bifunctor (class Bifunctor)
-import Data.Either (Either(..))
-import Data.Functor.Polynomial (type (:*:), type (:+:), Const(..), Id(..), Product(..), Sum(..))
 import Data.Functor.Mu (Mu(..))
+import Data.Functor.Polynomial (type (:*:), type (:+:), Const(..), Id(..), Product(..), Sum(..))
 import Data.Tuple (Tuple(..))
-import Dissect.Class (class Dissect)
+import Dissect.Class (class Dissect, Input(..), Output(..))
 import Test.QuickCheck.Gen (Gen, chooseInt)
 
 data ListF a n = Nil | Cons a n
@@ -49,17 +48,17 @@ instance Bifunctor (TreeF_2 a) where
 
 instance Dissect (ListF a) (ListF_2 a) where
   right = case _ of
-    Left Nil → Right Nil
-    Left (Cons a n) → Left (Tuple n (Cons_2 a))
-    Right (Tuple (Cons_2 a) c) → Right (Cons a c)
+    Init Nil → Return Nil
+    Init (Cons a n) → Yield n (Cons_2 a)
+    Next (Cons_2 a) c → Return (Cons a c)
 
 instance Dissect (TreeF a) (TreeF_2 a) where
   right = case _ of
-    Left (Leaf a) → Right (Leaf a)
-    Left (Fork n m) → Left (Tuple n (ForkR m))
-    Right (Tuple w c) → case w of
-      ForkR m → Left (Tuple m (ForkL c))
-      ForkL n → Right (Fork n c)
+    Init (Leaf a) → Return (Leaf a)
+    Init (Fork n m) → Yield n (ForkR m)
+    Next w c → case w of
+      ForkR m → Yield m (ForkL c)
+      ForkL n → Return (Fork n c)
 
 type ListP a = Const Unit :+: (Const a :*: Id)
 

@@ -5,7 +5,7 @@ import Prelude
 import Benchmark.Common (listOf, polyListOf, treeOf)
 import Benchmark.Folding.SSRS as FoldingSSRS
 import Benchmark.Folding.SSRSPoly as FoldingSSRSPoly
-import Benchmark.Folding.Matryoshka as FoldingMatryoshka
+-- import Benchmark.Folding.Matryoshka as FoldingMatryoshka
 import Benchotron.Core (Benchmark, benchFn, mkBenchmark)
 import Benchotron.UI.Console (runSuite)
 import Data.Array ((..))

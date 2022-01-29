@@ -5,28 +5,26 @@ import Prelude
 import Control.Monad.Free (Free, resume)
 import Control.Monad.Rec.Class (class MonadRec, Step(..), tailRecM2)
 import Control.Comonad.Cofree (Cofree, head, mkCofree, (:<))
-import Data.Either (Either(..), either)
+import Data.Either (either)
 import Data.Functor.Mu (Mu(..))
 import Data.List (List(..), (:))
-import Data.Tuple (Tuple(..))
-import Dissect.Class (class Dissect, pluck, plant)
+import Dissect.Class (class Dissect, Input(..), Output(..), right)
 import Safe.Coerce (class Coercible, coerce)
 import SSRS.Algebra (Algebra, AlgebraM, GAlgebra, GAlgebraM)
 import SSRS.Coalgebra (Coalgebra, CoalgebraM, GCoalgebra, GCoalgebraM)
 import SSRS.Transform (Transform, TransformM)
 
 hylo ∷ ∀ p q v w. Dissect p q ⇒ Algebra p v → Coalgebra p w → w → v
-hylo algebra coalgebra seed = go (pluck (coalgebra seed)) Nil
+hylo algebra coalgebra seed = go (right (Init (coalgebra seed))) Nil
   where
-  go ∷ Either (Tuple w (q v w)) (p v) → List (q v w) → v
   go index stack =
     case index of
-      Left (Tuple pt pd) →
-        go (pluck (coalgebra pt)) (pd : stack)
-      Right pv →
+      Yield pt pd →
+        go (right (Init (coalgebra pt))) (pd : stack)
+      Return pv →
         case stack of
           (pd : stk) →
-            go (plant pd (algebra pv)) stk
+            go (right (Next pd (algebra pv))) stk
           Nil →
             algebra pv
 
@@ -40,18 +38,18 @@ hyloM
   → m v
 hyloM algebraM coalgebraM seed = do
   start ← coalgebraM seed
-  tailRecM2 go (pluck start) Nil
+  tailRecM2 go (right (Init start)) Nil
   where
   go index stack =
     case index of
-      Left (Tuple pt pd) → do
+      Yield pt pd → do
         next ← coalgebraM pt
-        pure (Loop { a: pluck next, b: (pd : stack) })
-      Right pv →
+        pure (Loop { a: right (Init next), b: (pd : stack) })
+      Return pv →
         case stack of
           (pd : stk) → do
             next ← algebraM pv
-            pure (Loop { a: plant pd next, b: stk })
+            pure (Loop { a: right (Next pd next), b: stk })
           Nil → do
             Done <$> algebraM pv
 
