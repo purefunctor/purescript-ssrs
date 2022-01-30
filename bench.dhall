@@ -12,6 +12,7 @@ in      conf
               , "quickcheck"
               , "psci-support"
               , "tailrec"
+              , "typelevel-prelude"
               ]
         , sources = conf.sources # [ "benchmarks/**/*.purs" ]
         }

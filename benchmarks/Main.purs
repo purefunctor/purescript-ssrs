@@ -2,10 +2,10 @@ module Benchmark.Main where
 
 import Prelude
 
-import Benchmark.Common (listOf, polyListOf, treeOf)
+import Benchmark.Common (listOf, polyListOf, treeOf, vrListOf)
 import Benchmark.Folding.SSRS as FoldingSSRS
 import Benchmark.Folding.SSRSPoly as FoldingSSRSPoly
--- import Benchmark.Folding.Matryoshka as FoldingMatryoshka
+import Benchmark.Folding.SSRSVR as FoldingSSRSVR
 import Benchotron.Core (Benchmark, benchFn, mkBenchmark)
 import Benchotron.UI.Console (runSuite)
 import Data.Array ((..))
@@ -16,9 +16,9 @@ foldingList ∷ Benchmark
 foldingList = mkBenchmark
   { slug: "foldingList"
   , title: "Integer summation"
-  , sizes: (1 .. 5) <#> (_ * 100000)
+  , sizes: (1 .. 25) <#> (_ * 100)
   , sizeInterpretation: "List length"
-  , inputsPerSize: 50
+  , inputsPerSize: 10
   , gen: \n → listOf n arbitrary
   , functions:
       [ benchFn "ssrs" FoldingSSRS.sigma
@@ -30,12 +30,25 @@ foldingListPoly ∷ Benchmark
 foldingListPoly = mkBenchmark
   { slug: "foldingListPoly"
   , title: "Integer summation"
-  , sizes: (1 .. 25) <#> (_ * 1000)
+  , sizes: (1 .. 25) <#> (_ * 100)
   , sizeInterpretation: "List length"
-  , inputsPerSize: 100
+  , inputsPerSize: 10
   , gen: \n → polyListOf n arbitrary
   , functions:
       [ benchFn "ssrs" FoldingSSRSPoly.sigma
+      ]
+  }
+
+foldingListVr ∷ Benchmark
+foldingListVr = mkBenchmark
+  { slug: "foldingListVr"
+  , title: "Integer summation"
+  , sizes: (1 .. 25) <#> (_ * 100)
+  , sizeInterpretation: "List length"
+  , inputsPerSize: 10
+  , gen: \n → vrListOf n arbitrary
+  , functions:
+      [ benchFn "ssrs" FoldingSSRSVR.sigma
       ]
   }
 
@@ -53,4 +66,4 @@ foldingTree = mkBenchmark
   }
 
 main ∷ Effect Unit
-main = runSuite [ foldingList, foldingListPoly, foldingTree ]
+main = runSuite [ foldingList, foldingListPoly, foldingListVr, foldingTree ]

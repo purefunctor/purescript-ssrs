@@ -8,7 +8,10 @@ import Data.Functor.Mu (Mu(..))
 import Data.Functor.Polynomial (type (:*:), type (:+:), Const(..), Id(..), Product(..), Sum(..))
 import Data.Tuple (Tuple(..))
 import Dissect.Class (class Dissect, Input(..), Output(..))
+import Record.Polynomial (RecordF, from)
 import Test.QuickCheck.Gen (Gen, chooseInt)
+import Type.Prelude (Proxy(..))
+import Variant.Polynomial (OpenVariantF, VariantF, inj, instantiate)
 
 data ListF a n = Nil | Cons a n
 
@@ -109,3 +112,36 @@ treeOf n g
           else pure (_Fork a a)
 
         pure $ Loop (Tuple (_Fork l' r') (c - 1))
+
+type ConsR a =
+  (head :: Const a, tail :: Id)
+
+type ConsR' :: Type -> Type -> Row Type
+type ConsR' a n =
+  (head :: Const a n, tail :: Id n)
+
+type VRListV a =
+  ( "nil" :: Const Unit
+  , "cons" :: RecordF (ConsR a)
+  )
+
+type VRListF a = VariantF (VRListV a)
+
+type VRList a = Mu (VRListF a)
+
+_nil :: forall a. VRList a
+_nil = In (instantiate $ inj (Proxy :: _ "nil") (Const unit))
+
+_cons :: forall a. a -> VRList a -> VRList a
+_cons =
+  let
+    consFrom :: Record (ConsR' a (VRList a)) -> RecordF (ConsR a) (VRList a)
+    consFrom = from
+
+    consInstantiate :: OpenVariantF (VRListV a) (VRList a) -> VRListF a (VRList a)
+    consInstantiate = instantiate
+  in
+    \h t -> In (consInstantiate $ inj (Proxy :: _ "cons") (consFrom { head: Const h, tail: Id t }))
+
+vrListOf :: forall a. Int -> Gen a -> Gen (VRList a)
+vrListOf = listOf_ _nil _cons
