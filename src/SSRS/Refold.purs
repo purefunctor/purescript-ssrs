@@ -2,33 +2,38 @@ module SSRS.Refold where
 
 import Prelude
 
+import Control.Comonad.Cofree (Cofree, head, mkCofree, (:<))
 import Control.Monad.Free (Free, resume)
 import Control.Monad.Rec.Class (class MonadRec, Step(..), tailRecM2)
-import Control.Comonad.Cofree (Cofree, head, mkCofree, (:<))
-import Data.Either (Either(..), either)
+import Data.Either (either)
 import Data.Functor.Mu (Mu(..))
 import Data.List (List(..), (:))
-import Data.Tuple (Tuple(..))
-import Dissect.Class (class Dissect, pluck, plant)
-import Safe.Coerce (class Coercible, coerce)
+import Data.Variant as Variant
+import Dissect.Class (class Dissect, Result(..), init, next)
 import SSRS.Algebra (Algebra, AlgebraM, GAlgebra, GAlgebraM)
 import SSRS.Coalgebra (Coalgebra, CoalgebraM, GCoalgebra, GCoalgebraM)
 import SSRS.Transform (Transform, TransformM)
+import Safe.Coerce (class Coercible, coerce)
+
+foreign import unsafeHylo
+  ∷ ∀ p q v w
+  . (p (Mu p) → Result p q v (Mu p))
+  → (q v (Mu p) → v → Result p q v (Mu p))
+  → Algebra p v
+  → Coalgebra p w
+  → w
+  → v
 
 hylo ∷ ∀ p q v w. Dissect p q ⇒ Algebra p v → Coalgebra p w → w → v
-hylo algebra coalgebra seed = go (pluck (coalgebra seed)) Nil
-  where
-  go ∷ Either (Tuple w (q v w)) (p v) → List (q v w) → v
-  go index stack =
-    case index of
-      Left (Tuple pt pd) →
-        go (pluck (coalgebra pt)) (pd : stack)
-      Right pv →
-        case stack of
-          (pd : stk) →
-            go (plant pd (algebra pv)) stk
-          Nil →
-            algebra pv
+hylo =
+  let
+    init' ∷ p (Mu p) → Result p q v (Mu p)
+    init' = init
+
+    next' ∷ q v (Mu p) → v → Result p q v (Mu p)
+    next' = next
+  in
+    unsafeHylo init' next'
 
 hyloM
   ∷ ∀ m p q v w
@@ -40,20 +45,21 @@ hyloM
   → m v
 hyloM algebraM coalgebraM seed = do
   start ← coalgebraM seed
-  tailRecM2 go (pluck start) Nil
+  tailRecM2 go (init start) Nil
   where
-  go index stack =
-    case index of
-      Left (Tuple pt pd) → do
-        next ← coalgebraM pt
-        pure (Loop { a: pluck next, b: (pd : stack) })
-      Right pv →
+  go ∷ Result p q v w → List (q v w) → m (Step _ v)
+  go (Result index) stack = index # Variant.match
+    { yield: \{ j: pt, qcj: pd } → do
+        pt' ← coalgebraM pt
+        pure (Loop { a: init pt', b: pd : stack })
+    , return: \pv →
         case stack of
-          (pd : stk) → do
-            next ← algebraM pv
-            pure (Loop { a: plant pd next, b: stk })
-          Nil → do
+          pd : stk → do
+            pv' ← algebraM pv
+            pure (Loop { a: next pd pv', b: stk })
+          Nil →
             Done <$> algebraM pv
+    }
 
 transHylo
   ∷ ∀ p p' q q' r r'

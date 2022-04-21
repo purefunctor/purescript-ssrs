@@ -4,44 +4,49 @@ import Prelude
 
 import Control.Comonad.Cofree (Cofree, head, mkCofree, (:<))
 import Control.Monad.Rec.Class (class MonadRec, Step(..), tailRecM2)
-import Data.Either (Either(..))
 import Data.Functor.Mu (Mu(..))
 import Data.List (List(..), (:))
 import Data.Tuple (Tuple(..), fst, snd, swap)
-import Dissect.Class (class Dissect, pluck, plant)
-import Safe.Coerce (class Coercible, coerce)
+import Data.Variant as Variant
+import Dissect.Class (class Dissect, Result(..), init, next)
 import SSRS.Algebra (Algebra, AlgebraM, GAlgebra, GAlgebraM)
 import SSRS.Transform (Transform, TransformM)
+import Safe.Coerce (class Coercible, coerce)
+
+foreign import unsafeCata
+  ∷ ∀ p q v
+  . (p (Mu p) → Result p q v (Mu p))
+  → (q v (Mu p) → v → Result p q v (Mu p))
+  → Algebra p v
+  → Mu p
+  → v
 
 cata ∷ ∀ p q v. Dissect p q ⇒ Algebra p v → Mu p → v
-cata algebra (In pt) = go (pluck pt) Nil
-  where
-  go ∷ Either (Tuple (Mu p) (q v (Mu p))) (p v) → List (q v (Mu p)) → v
-  go index stack =
-    case index of
-      Left (Tuple (In pt') pd) →
-        go (pluck pt') (pd : stack)
-      Right pv →
-        case stack of
-          (pd : stk) →
-            go (plant pd (algebra pv)) stk
-          Nil →
-            algebra pv
+cata =
+  let
+    init' ∷ p (Mu p) → Result p q v (Mu p)
+    init' = init
+
+    next' ∷ q v (Mu p) → v → Result p q v (Mu p)
+    next' = next
+  in
+    unsafeCata init' next'
 
 cataM ∷ ∀ m p q v. MonadRec m ⇒ Dissect p q ⇒ AlgebraM m p v → Mu p → m v
-cataM algebraM (In pt) = tailRecM2 go (pluck pt) Nil
+cataM algebraM (In pt) = tailRecM2 go (init pt) Nil
   where
-  go index stack =
-    case index of
-      Left (Tuple (In pt') pd) →
-        pure (Loop { a: pluck pt', b: (pd : stack) })
-      Right pv →
+  go ∷ Result p q v (Mu p) → List (q v (Mu p)) → m (Step _ v)
+  go (Result index) stack = index # Variant.match
+    { yield: \{ j: In pt', qcj: pd } →
+        pure (Loop { a: init pt', b: pd : stack })
+    , return: \pv →
         case stack of
-          (pd : stk) → do
+          pd : stk → do
             pv' ← algebraM pv
-            pure (Loop { a: plant pd pv', b: stk })
-          Nil → do
+            pure (Loop { a: next pd pv', b: stk })
+          Nil →
             Done <$> algebraM pv
+    }
 
 transCata
   ∷ ∀ p p' q q'
@@ -113,7 +118,8 @@ zygo algebra gAlgebra = fst <<< cata zAlgebra
   zAlgebra ∷ p (Tuple v w) → Tuple v w
   zAlgebra n = Tuple (gAlgebra (map swap n)) (algebra (map snd n))
 
-zygoM ∷ ∀ m p q v w. MonadRec m ⇒ Dissect p q ⇒ AlgebraM m p w → GAlgebraM (Tuple w) m p v → Mu p → m v
+zygoM
+  ∷ ∀ m p q v w. MonadRec m ⇒ Dissect p q ⇒ AlgebraM m p w → GAlgebraM (Tuple w) m p v → Mu p → m v
 zygoM algebraM gAlgebraM = map fst <<< cataM zAlgebraM
   where
   zAlgebraM ∷ p (Tuple v w) → m (Tuple v w)
@@ -125,7 +131,14 @@ mutu gAlgebraV gAlgebraW = fst <<< cata algebra
   algebra ∷ p (Tuple v w) → Tuple v w
   algebra n = Tuple (gAlgebraW (map swap n)) (gAlgebraV n)
 
-mutuM ∷ ∀ m p q v w. MonadRec m ⇒ Dissect p q ⇒ GAlgebraM (Tuple v) m p w → GAlgebraM (Tuple w) m p v → Mu p → m v
+mutuM
+  ∷ ∀ m p q v w
+  . MonadRec m
+  ⇒ Dissect p q
+  ⇒ GAlgebraM (Tuple v) m p w
+  → GAlgebraM (Tuple w) m p v
+  → Mu p
+  → m v
 mutuM gAlgebraVM gAlgebraWM = map fst <<< cataM algebraM
   where
   algebraM ∷ p (Tuple v w) → m (Tuple v w)

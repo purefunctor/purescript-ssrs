@@ -7,43 +7,48 @@ import Control.Monad.Rec.Class (class MonadRec, Step(..), tailRecM2)
 import Data.Either (Either(..), either)
 import Data.Functor.Mu (Mu(..))
 import Data.List (List(..), (:))
-import Data.Tuple (Tuple(..))
-import Dissect.Class (class Dissect, pluck, plant)
-import Safe.Coerce (class Coercible, coerce)
+import Data.Variant as Variant
+import Dissect.Class (class Dissect, Result(..), init, next)
 import SSRS.Coalgebra (Coalgebra, CoalgebraM, GCoalgebra, GCoalgebraM)
 import SSRS.Transform (Transform, TransformM)
+import Safe.Coerce (class Coercible, coerce)
+
+foreign import unsafeAna
+  ∷ ∀ p q v
+  . (p (Mu p) → Result p q v (Mu p))
+  → (q v (Mu p) → v → Result p q v (Mu p))
+  → Coalgebra p v
+  → v
+  → Mu p
 
 ana ∷ ∀ p q v. Dissect p q ⇒ Coalgebra p v → v → Mu p
-ana coalgebra seed = go (pluck (coalgebra seed)) Nil
-  where
-  go ∷ Either (Tuple v (q (Mu p) v)) (p (Mu p)) → List (q (Mu p) v) → Mu p
-  go index stack =
-    case index of
-      Left (Tuple pt pd) →
-        go (pluck (coalgebra pt)) (pd : stack)
-      Right pv →
-        case stack of
-          (pd : stk) →
-            go (plant pd (In pv)) stk
-          Nil →
-            In pv
+ana =
+  let
+    init' ∷ p (Mu p) → Result p q v (Mu p)
+    init' = init
+
+    next' ∷ q v (Mu p) → v → Result p q v (Mu p)
+    next' = next
+  in
+    unsafeAna init' next'
 
 anaM ∷ ∀ m p q v. MonadRec m ⇒ Dissect p q ⇒ CoalgebraM m p v → v → m (Mu p)
 anaM coalgebraM seed = do
   start ← coalgebraM seed
-  tailRecM2 go (pluck start) Nil
+  tailRecM2 go (init start) Nil
   where
-  go index stack =
-    case index of
-      Left (Tuple pt pd) → do
-        next ← coalgebraM pt
-        pure (Loop { a: pluck next, b: (pd : stack) })
-      Right pv →
+  go ∷ Result p q (Mu p) v → List (q (Mu p) v) → m (Step _ (Mu p))
+  go (Result index) stack = index # Variant.match
+    { yield: \{ j: pt, qcj: pd } → do
+        pt' ← coalgebraM pt
+        pure (Loop { a: init pt', b: pd : stack })
+    , return: \pv →
         case stack of
-          (pd : stk) →
-            pure (Loop { a: plant pd (In pv), b: stk })
+          pd : stk →
+            pure (Loop { a: next pd (In pv), b: stk })
           Nil →
             pure (Done (In pv))
+    }
 
 transAna
   ∷ ∀ p p' q q'

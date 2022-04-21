@@ -9,6 +9,7 @@
   , "safe-coerce"
   , "tailrec"
   , "tuples"
+  , "variant"
   ]
 , packages = ./packages.dhall
 , sources = [ "src/**/*.purs" ]

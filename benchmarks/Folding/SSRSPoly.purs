@@ -3,7 +3,7 @@ module Benchmark.Folding.SSRSPoly where
 import Prelude
 
 import Benchmark.Common (ListP)
-import Data.Functor.Polynomial (Const(..), Id(..), Product(..), Sum(..))
+import Dissect.Generic (Const(..), Id(..), Product(..), Sum(..))
 import Data.Functor.Mu (Mu)
 import SSRS.Fold (cata)
 

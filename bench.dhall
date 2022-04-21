@@ -10,7 +10,6 @@ in      conf
               , "free"
               , "matryoshka"
               , "quickcheck"
-              , "psci-support"
               , "tailrec"
               ]
         , sources = conf.sources # [ "benchmarks/**/*.purs" ]
