@@ -1,6 +1,6 @@
 let upstream =
-      https://github.com/purescript/package-sets/releases/download/psc-0.14.7-20220418/packages.dhall
-        sha256:2523a5659d0f3b198ffa2f800da147e0120578842e492a7148e4b44f357848b3
+      https://github.com/purescript/package-sets/releases/download/psc-0.15.0-20220504/packages.dhall
+        sha256:fd37736ecaa24491c907af6a6422156417f21fbf25763de19f65bd641e8340d3
 
 let overrides =
       { dissect =
@@ -8,7 +8,7 @@ let overrides =
           //  { dependencies =
                     upstream.dissect.dependencies
                   # [ "foreign-object", "variant" ]
-              , version = "main"
+              , version = "v1.0.0"
               }
       }
 
