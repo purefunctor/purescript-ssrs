@@ -1,16 +1,8 @@
 let upstream =
-      https://github.com/purescript/package-sets/releases/download/psc-0.15.0-20220504/packages.dhall
-        sha256:fd37736ecaa24491c907af6a6422156417f21fbf25763de19f65bd641e8340d3
+      https://github.com/purescript/package-sets/releases/download/psc-0.15.0-20220505/packages.dhall
+        sha256:ba57c25c86fd54c2b672cda3a6836bbbdff4b1bbf946bceaabb64e5a10285638
 
-let overrides =
-      { dissect =
-              upstream.dissect
-          //  { dependencies =
-                    upstream.dissect.dependencies
-                  # [ "foreign-object", "variant" ]
-              , version = "v1.0.0"
-              }
-      }
+let overrides = {=}
 
 let additions =
       { benchotron =
@@ -33,8 +25,8 @@ let additions =
           , "strings"
           , "transformers"
           ]
-        , repo = "https://github.com/hdgarrood/purescript-benchotron.git"
-        , version = "e64664de1fa0843ca78949f36b31b176fa6b0f84"
+        , repo = "https://github.com/PureFunctor/purescript-benchotron.git"
+        , version = "v0.15.0"
         }
       }
 
