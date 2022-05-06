@@ -1,0 +1,28 @@
+{
+    "name": "purescript-ssrs",
+    "license": [
+        "BSD-3-Clause"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/PureFunctor/purescript-ssrs.git"
+    },
+    "ignore": [
+        "**/.*",
+        "node_modules",
+        "bower_components",
+        "output"
+    ],
+    "dependencies": {
+        "purescript-dissect": "https://github.com/PureFunctor/purescript-dissect.git#v1.0.0",
+        "purescript-either": "^v6.0.0",
+        "purescript-fixed-points": "^v7.0.0",
+        "purescript-free": "^v7.0.0",
+        "purescript-lists": "^v7.0.0",
+        "purescript-prelude": "^v6.0.0",
+        "purescript-safe-coerce": "^v2.0.0",
+        "purescript-tailrec": "^v6.0.0",
+        "purescript-tuples": "^v7.0.0",
+        "purescript-variant": "^v8.0.0"
+    }
+}
